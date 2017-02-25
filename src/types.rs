@@ -36,29 +36,29 @@ pub struct Cache {
 pub struct Request {
     pub video_id: i32,
     pub endpoint_id: i32,
-    pub request_count: i32
+    pub count: i32
 }
 
 impl Request {
-    pub fn new(video_id: i32, endpoint_id: i32, request_count: i32) -> Request {
+    pub fn new(video_id: i32, endpoint_id: i32, count: i32) -> Request {
         Request {
             video_id: video_id,
             endpoint_id: endpoint_id,
-            request_count: request_count
+            count: count
         }
     }
 }
 
 pub struct CacheInfo {
     pub count: i32,
-    pub size: i32
+    pub capacity: i32
 }
 
 impl CacheInfo {
-    pub fn new(count: i32, size: i32) -> CacheInfo {
+    pub fn new(count: i32, capacity: i32) -> CacheInfo {
         CacheInfo {
             count: count,
-            size: size
+            capacity: capacity
         }
     }
 }

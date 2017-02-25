@@ -5,23 +5,30 @@ pub fn parse(input: &str) -> Option<(CacheInfo, Vec<Video>, Vec<Endpoint>, Vec<R
     let mut header = Header::new();
     let mut videos: Vec<Video> = Vec::new();
     let mut endpoints: Vec<Endpoint> = Vec::new();
-    let mut splitted = input.split('\n');
+    let mut splitted = input.trim().split('\n');
 
     splitted.next()
         .and_then(parse_header)
         .and_then(|parsed_header| {
+            println!("Parsing headers");
             header = parsed_header;
             splitted.next()
         })
-        .and_then(|videos| { parse_videos(videos, header.video_count) })
+        .and_then(|videos| {
+            println!("Parsing videos");
+            parse_videos(videos, header.video_count)
+        })
         .and_then(|parsed_videos| {
+            println!("Parsing endpoints");
             videos = parsed_videos;
             parse_endpoints(&mut splitted, header.endpoint_count)
         }).and_then(|parsed_endpoints| {
+            println!("Parsing requests");
             endpoints = parsed_endpoints;
             parse_requests(&mut splitted, header.request_count)
         }).map(|requests| {
-            (CacheInfo::new(header.cache_count, header.cache_size), videos, endpoints, requests)
+            println!("Done");
+            (CacheInfo::new(header.cache_count, header.cache_capacity), videos, endpoints, requests)
         })
 }
 
@@ -30,7 +37,7 @@ struct Header {
     endpoint_count: i32,
     request_count: i32,
     cache_count: i32,
-    cache_size: i32
+    cache_capacity: i32
 }
 
 impl Header {
@@ -40,7 +47,7 @@ impl Header {
             endpoint_count: 0,
             request_count: 0,
             cache_count: 0,
-            cache_size: 0
+            cache_capacity: 0
         }
     }
 }
@@ -58,7 +65,7 @@ fn parse_header(header: &str) -> Option<Header> {
                 endpoint_count: values[1],
                 request_count: values[2],
                 cache_count: values[3],
-                cache_size: values[4]
+                cache_capacity: values[4]
             }),
             _ => None
         }

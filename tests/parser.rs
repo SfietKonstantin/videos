@@ -27,7 +27,7 @@ fn test_cache_info_and_videos() {
 
     let (cache_info, videos, endpoints, _) = result_option.unwrap();
     assert_eq!(123, cache_info.count);
-    assert_eq!(456, cache_info.size);
+    assert_eq!(456, cache_info.capacity);
     assert_eq!(2, videos.len());
     assert_eq!(0, videos[0].id);
     assert_eq!(12, videos[0].size);
@@ -53,7 +53,7 @@ fn test_end_to_end() {
 
     let (cache_info, videos, endpoints, requests) = result_option.unwrap();
     assert_eq!(3, cache_info.count);
-    assert_eq!(100, cache_info.size);
+    assert_eq!(100, cache_info.capacity);
     assert_eq!(5, videos.len());
     assert_eq!(50, videos[0].size);
     assert_eq!(50, videos[1].size);
@@ -70,14 +70,14 @@ fn test_end_to_end() {
     assert_eq!(4, requests.len());
     assert_eq!(3, requests[0].video_id);
     assert_eq!(0, requests[0].endpoint_id);
-    assert_eq!(1500, requests[0].request_count);
+    assert_eq!(1500, requests[0].count);
     assert_eq!(0, requests[1].video_id);
     assert_eq!(1, requests[1].endpoint_id);
-    assert_eq!(1000, requests[1].request_count);
+    assert_eq!(1000, requests[1].count);
     assert_eq!(4, requests[2].video_id);
     assert_eq!(0, requests[2].endpoint_id);
-    assert_eq!(500, requests[2].request_count);
+    assert_eq!(500, requests[2].count);
     assert_eq!(1, requests[3].video_id);
     assert_eq!(0, requests[3].endpoint_id);
-    assert_eq!(1000, requests[3].request_count);
+    assert_eq!(1000, requests[3].count);
 }
