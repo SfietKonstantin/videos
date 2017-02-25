@@ -6,7 +6,8 @@ use videos::output::produce_output;
 use videos::algo::{Mode, algo};
 
 fn main() {
-    let files = vec!["kittens.in", "me_at_the_zoo.in", "trending_today.in", "videos_worth_spreading.in"];
+    //let files = vec!["kittens.in", "me_at_the_zoo.in", "trending_today.in", "videos_worth_spreading.in"];
+    let files = vec!["me_at_the_zoo.in", "trending_today.in", "videos_worth_spreading.in"];
     for file in files {
         println!("Processing file {}", file);
         process(file).unwrap();

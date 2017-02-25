@@ -88,14 +88,10 @@ fn cache_filling(cache_info: CacheInfo, videos: Vec<Video>) -> BTreeMap<i32, BTr
 
 fn descent(cache_info: CacheInfo, videos: Vec<Video>, endpoints: Vec<Endpoint>,
            requests: Vec<Request>) -> BTreeMap<i32, BTreeSet<i32>> {
-    // Compute the gain for each cache x video
-    // Gain = sum per endpoint ( requests * (latency datacenter - latency cache) )
-    let returned: BTreeMap<i32, BTreeSet<i32>> = BTreeMap::new();
-
     println!("Process the requests per video x endpoint");
     let mut video_endpoint_to_request: BTreeMap<i32, BTreeMap<i32, i32>> = BTreeMap::new();
 
-    for video in videos {
+    for video in &videos {
         video_endpoint_to_request.insert(video.id, BTreeMap::new());
     }
 
@@ -104,6 +100,7 @@ fn descent(cache_info: CacheInfo, videos: Vec<Video>, endpoints: Vec<Endpoint>,
     }
 
     println!("Process the endpoints reacheable by a cache");
+    let mut datacenter_endpoint_to_latency: BTreeMap<i32, i32> = BTreeMap::new();
     let mut cache_endpoint_to_latency: BTreeMap<i32, BTreeMap<i32, i32>> = BTreeMap::new();
 
     for cache in 0..cache_info.count {
@@ -112,14 +109,54 @@ fn descent(cache_info: CacheInfo, videos: Vec<Video>, endpoints: Vec<Endpoint>,
 
     for endpoint in endpoints {
         for (cache_id, latency) in endpoint.latency_to_cache {
-            cache_endpoint_to_latency.get_mut(&cache_id).unwrap().insert(endpoint.id, latency);
+            if cache_id >= 0 {
+                cache_endpoint_to_latency.get_mut(&cache_id).unwrap().insert(endpoint.id, latency);
+            } else {
+                datacenter_endpoint_to_latency.insert(endpoint.id, latency);
+            }
         }
     }
 
     println!("Process the gain per video x endpoint");
 
+    // Compute the gain for each cache x video
+    // Gain = sum per endpoint ( requests * (latency datacenter - latency cache) )
+    let mut gains: BTreeMap<i32, Vec<(i32, i32)>> = BTreeMap::new();
+    for video in &videos {
+        println!("Video: {}", video.id);
+        let endpoint_to_request = video_endpoint_to_request.get(&video.id).unwrap();
+        let endpoints: BTreeSet<i32> = endpoint_to_request.iter()
+            .map(|(&endpoint, _)| endpoint)
+            .collect();
+        for cache_id in 0..cache_info.count {
+            let endpoints_latency = cache_endpoint_to_latency.get(&cache_id).unwrap();
+            let gain = endpoints_latency.iter()
+                .filter(|&(endpoint, _)| endpoints.contains(endpoint))
+                .fold(0, |gain, (endpoint, latency)| {
+                    let requests = endpoint_to_request.get(&endpoint).unwrap();
+                    let datacenter_latency = datacenter_endpoint_to_latency.get(&endpoint).unwrap();
+                    gain + (datacenter_latency - latency) * requests
+                }) / video.size;
+            gains.insert(gain, Vec::new());
+            gains.get_mut(&gain).unwrap().push((video.id, cache_id));
+        }
+    }
+
+    println!("Done processing gain");
+
+    let mut filled: BTreeMap<i32, FilledCache>
+    = (0..cache_info.count).map(|id| (id, FilledCache::new(cache_info.capacity))).collect();
+
+    for (_, ref mapping) in gains.iter().rev() {
+        for &(video_id, cache_id) in *mapping {
+            filled.get_mut(&cache_id).unwrap().add_video(&videos[video_id as usize]);
+        }
+    }
 
 
-
+    let returned: BTreeMap<i32, BTreeSet<i32>> = filled.iter().map(|(cache_id, cache)| {
+        let videos: BTreeSet<i32> = cache.videos.clone();
+        (*cache_id, videos)
+    }).collect();
     returned
 }
