@@ -7,7 +7,8 @@ pub enum Mode {
     CacheSpreading,
     CacheFilling,
     Descent,
-    DescentCost
+    DescentCost,
+    DescentAudience,
 }
 
 pub fn algo(mode: Mode, cache_info: CacheInfo, videos: Vec<Video>, endpoints: Vec<Endpoint>,
@@ -17,7 +18,8 @@ pub fn algo(mode: Mode, cache_info: CacheInfo, videos: Vec<Video>, endpoints: Ve
         Mode::CacheSpreading => cache_spreading(cache_info, videos),
         Mode::CacheFilling => cache_filling(cache_info, videos),
         Mode::Descent => descent(GainMode::PureGain, cache_info, videos, endpoints, requests),
-        Mode::DescentCost => descent(GainMode::GainOverCost, cache_info, videos, endpoints, requests)
+        Mode::DescentCost => descent(GainMode::GainOverCost, cache_info, videos, endpoints, requests),
+        Mode::DescentAudience => descent(GainMode::GainOverAudience, cache_info, videos, endpoints, requests)
     }
 }
 
@@ -90,7 +92,8 @@ fn cache_filling(cache_info: CacheInfo, videos: Vec<Video>) -> BTreeMap<i32, BTr
 
 pub enum GainMode {
     PureGain,
-    GainOverCost
+    GainOverCost,
+    GainOverAudience
 }
 
 pub fn descent_gain(gain_mode: GainMode, ref cache_info: &CacheInfo, ref videos: &Vec<Video>,
@@ -99,7 +102,9 @@ pub fn descent_gain(gain_mode: GainMode, ref cache_info: &CacheInfo, ref videos:
     let mut video_endpoint_to_request: BTreeMap<i32, BTreeMap<i32, i32>> = BTreeMap::new();
 
     for request in requests {
-        video_endpoint_to_request.insert(request.video_id, BTreeMap::new());
+        if !video_endpoint_to_request.contains_key(&request.video_id) {
+            video_endpoint_to_request.insert(request.video_id, BTreeMap::new());
+        }
         video_endpoint_to_request.get_mut(&request.video_id).unwrap().insert(request.endpoint_id, request.count);
     }
 
@@ -110,7 +115,9 @@ pub fn descent_gain(gain_mode: GainMode, ref cache_info: &CacheInfo, ref videos:
     for endpoint in endpoints {
         for (cache_id, latency) in endpoint.latency_to_cache {
             if cache_id >= 0 {
-                cache_endpoint_to_latency.insert(cache_id, BTreeMap::new());
+                if !cache_endpoint_to_latency.contains_key(&cache_id) {
+                    cache_endpoint_to_latency.insert(cache_id, BTreeMap::new());
+                }
                 cache_endpoint_to_latency.get_mut(&cache_id).unwrap().insert(endpoint.id, latency);
             } else {
                 datacenter_endpoint_to_latency.insert(endpoint.id, latency);
@@ -134,19 +141,28 @@ pub fn descent_gain(gain_mode: GainMode, ref cache_info: &CacheInfo, ref videos:
         };
 
         for cache_id in 0..cache_info.count {
+            let mut all_requests = 0;
             let endpoints_latency = cache_endpoint_to_latency.get(&cache_id).unwrap();
             let gain = endpoints_latency.iter()
-                .filter(|&(endpoint, _)| endpoints.contains(endpoint))
-                .fold(0, |gain, (endpoint, latency)| {
-                    let requests = endpoint_to_request.unwrap().get(&endpoint).unwrap();
-                    let datacenter_latency = datacenter_endpoint_to_latency.get(&endpoint).unwrap();
-                    gain + (datacenter_latency - latency) * requests
-                });
+            .filter(|&(endpoint, _)| endpoints.contains(endpoint))
+            .fold(0, |gain, (endpoint, latency)| {
+                let requests = endpoint_to_request.unwrap().get(&endpoint).unwrap();
+                let datacenter_latency = datacenter_endpoint_to_latency.get(&endpoint).unwrap();
+                all_requests += *requests;
+                gain + (datacenter_latency - latency) * requests
+            });
+            let gain_over_audience = match all_requests {
+                0 => 0,
+                _ => gain / all_requests
+            };
             let effective_gain = match gain_mode {
                 GainMode::PureGain => gain,
-                GainMode::GainOverCost => gain / video.size
+                GainMode::GainOverCost => gain / video.size,
+                GainMode::GainOverAudience => gain_over_audience
             };
-            gains.insert(effective_gain, Vec::new());
+            if !gains.contains_key(&effective_gain) {
+                gains.insert(effective_gain, Vec::new());
+            }
             gains.get_mut(&effective_gain).unwrap().push((video.id, cache_id));
         }
     }
@@ -163,7 +179,6 @@ fn descent(gain_mode: GainMode, cache_info: CacheInfo, videos: Vec<Video>, endpo
     = (0..cache_info.count).map(|id| (id, FilledCache::new(cache_info.capacity))).collect();
 
     for (gain, ref mapping) in gains.iter().rev() {
-        println!("Gain: {}", gain);
         for &(video_id, cache_id) in *mapping {
             filled.get_mut(&cache_id).unwrap().add_video(&videos[video_id as usize]);
         }
