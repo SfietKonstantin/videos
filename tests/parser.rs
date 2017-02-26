@@ -61,12 +61,12 @@ fn test_end_to_end() {
     assert_eq!(30, videos[3].size);
     assert_eq!(110, videos[4].size);
     assert_eq!(2, endpoints.len());
-    assert_eq!(4, endpoints[0].latency_to_cache.len());
-    assert_eq!(1000, *endpoints[0].latency_to_cache.get(&-1).unwrap());
-    assert_eq!(100, *endpoints[0].latency_to_cache.get(&0).unwrap());
-    assert_eq!(300, *endpoints[0].latency_to_cache.get(&1).unwrap());
-    assert_eq!(100, *endpoints[0].latency_to_cache.get(&2).unwrap());
-    assert_eq!(500, *endpoints[1].latency_to_cache.get(&-1).unwrap());
+    assert_eq!(4, endpoints[0].cache_to_latency.len());
+    assert_eq!(1000, *endpoints[0].cache_to_latency.get(&-1).unwrap());
+    assert_eq!(100, *endpoints[0].cache_to_latency.get(&0).unwrap());
+    assert_eq!(300, *endpoints[0].cache_to_latency.get(&1).unwrap());
+    assert_eq!(100, *endpoints[0].cache_to_latency.get(&2).unwrap());
+    assert_eq!(500, *endpoints[1].cache_to_latency.get(&-1).unwrap());
     assert_eq!(4, requests.len());
     assert_eq!(3, requests[0].video_id);
     assert_eq!(0, requests[0].endpoint_id);

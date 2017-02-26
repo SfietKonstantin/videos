@@ -16,14 +16,14 @@ impl Video {
 
 pub struct Endpoint {
     pub id: i32,
-    pub latency_to_cache: BTreeMap<i32, i32>
+    pub cache_to_latency: BTreeMap<i32, i32>
 }
 
 impl Endpoint {
-    pub fn new(id: i32, latency_to_cache: BTreeMap<i32, i32>) -> Endpoint {
+    pub fn new(id: i32, cache_to_latency: BTreeMap<i32, i32>) -> Endpoint {
         Endpoint {
             id: id,
-            latency_to_cache: latency_to_cache
+            cache_to_latency: cache_to_latency
         }
     }
 }

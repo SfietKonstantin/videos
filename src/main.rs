@@ -6,8 +6,9 @@ use videos::output::produce_output;
 use videos::algo::{Mode, algo};
 
 fn main() {
-    let files = vec!["kittens.in", "me_at_the_zoo.in", "trending_today.in", "videos_worth_spreading.in"];
-    // let files = vec!["me_at_the_zoo.in"];
+    //let files = vec!["kittens.in", "me_at_the_zoo.in", "trending_today.in", "videos_worth_spreading.in"];
+    //let files = vec!["me_at_the_zoo.in"];
+    let files = vec!["kittens.in"];
     for file in files {
         println!("Processing file {}", file);
         process(file).unwrap();
@@ -27,7 +28,7 @@ fn process(filename: &str) -> Result<(), String> {
         }).and_then(|contents| {
             parse(&*contents).ok_or(String::from("Unable to parse input"))
         }).and_then(|(cache_info, videos, endpoints, requests)| {
-            let output = algo(Mode::DescentAudience, cache_info, videos, endpoints, requests);
+            let output = algo(Mode::DescentAmend, cache_info, videos, endpoints, requests);
             let output_string = produce_output(output);
 
             File::create(out_filename)
